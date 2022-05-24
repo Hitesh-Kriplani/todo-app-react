@@ -6,18 +6,27 @@ import Todo from './components/Todo';
 import { db } from './firebase.js';
 import {
   collection,
+  query,
+  orderBy,
   onSnapshot,
   serverTimestamp,
   addDoc,
 } from 'firebase/firestore';
+
+const q = query(collection(db, 'todos'), orderBy('timestamp', 'desc'));
 
 function App() {
   const [todos, setTodos] = useState([]);
   const [input, setInput] = useState('');
 
   useEffect(() => {
-    onSnapshot(collection(db, 'todos'), (snapshot) => {
-      setTodos(snapshot.docs.map((doc) => doc.data()));
+    onSnapshot(q, (snapshot) => {
+      setTodos(
+        snapshot.docs.map((doc) => ({
+          id: doc.id,
+          item: doc.data(),
+        }))
+      );
     });
   }, [input]);
 
@@ -27,13 +36,12 @@ function App() {
       todo: input,
       timestamp: serverTimestamp(),
     });
-    setTodos([...todos, input]);
     setInput('');
   };
   return (
     <div className='App'>
       <h2>TODO List App</h2>
-      <form>
+      <form preventDefault>
         <TextField
           id='outlined-basic'
           label='Make Todo'
@@ -43,13 +51,18 @@ function App() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
         ></TextField>
-        <Button variant='contained' color='primary' onClick={addTodo}>
+        <Button
+          variant='contained'
+          color='primary'
+          onClick={addTodo}
+          type='submit'
+        >
           Add Todo
         </Button>
       </form>
       <ul>
-        {todos.map(({ todo }) => (
-          <Todo todo={todo} />
+        {todos.map((item) => (
+          <Todo key={item.id} arr={item} />
         ))}
       </ul>
     </div>
